@@ -6,6 +6,9 @@ builds and verifies Merkle disbursement batches, fixes the hashing conventions
 that every party must share, and defines the anchor interface for last-mile
 payouts.
 
+Unaudited. Testnet only. There is no mainnet deployment and no mainnet
+configuration. Do not use this to move real value.
+
 This is the SDK repository, the middle of three:
 
 - [cygnus-contracts](https://github.com/Cygnus-aid-disbursement/cygnus-contracts)
@@ -27,6 +30,31 @@ left the programme for that many recipients totalling that amount; it cannot say
 those recipients received anything of value. Any interface built on this SDK must
 carry that distinction. The batch API deliberately never accepts or exposes a raw
 beneficiary identifier.
+
+## Beneficiary privacy
+
+A disbursement publishes only a Merkle root, a total, and a count. Individual
+payouts never go on chain, and no batch method returns a list of recipients.
+`buildBatch` salts each recipient reference before hashing it into a leaf, so the
+same person cannot be correlated across programmes, and `saltRecipientRef` is the
+only path from a reference to a leaf input. A beneficiary keeps their leaf and
+inclusion proof as a private receipt they can present if they ever need to; no
+one else can enumerate the list.
+
+## Status
+
+Deployed Testnet contract id, vendored in `src/deployments.json`:
+`CBN6MNOWZISG6EXVCUQSGKASFSIBVDBZSVASI6FZYBLBMLHMQWL6SAL7`.
+
+What works today: the typed client for every contract call, event decoding,
+`waitForState`, the hashing conventions, and Merkle batch construction, proofs,
+and verification. The Merkle encoding is cross-checked against the deployed
+contract by `test/integration.test.ts`.
+
+What does not work yet: the anchor interface ships only as `StubAnchor`, which
+throws `NotImplementedError`; there is no working last-mile payout rail. The
+client has no helpers for the contract's panel or oracle approvers, because those
+are unimplemented in the contract. These gaps are tracked as GitHub issues.
 
 ## Compatibility
 
