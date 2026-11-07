@@ -74,6 +74,18 @@ describe("amountToBe16", () => {
   it("encodes small positives as 16-byte big-endian", () => {
     expect(amountToBe16(12n).toString("hex")).toBe("0000000000000000000000000000000c");
   });
+  it("encodes zero as 16 zero bytes", () => {
+    expect(amountToBe16(0n).toString("hex")).toBe("00000000000000000000000000000000");
+  });
+  it("encodes negative amounts using two's complement", () => {
+    expect(amountToBe16(-1n).toString("hex")).toBe("ffffffffffffffffffffffffffffffff");
+  });
+  it("throws RangeError if amount exceeds i128 range", () => {
+    const overflow = 1n << 127n;
+    expect(() => amountToBe16(overflow)).toThrow(RangeError);
+    const underflow = -(1n << 127n) - 1n;
+    expect(() => amountToBe16(underflow)).toThrow(RangeError);
+  });
   it("salted recipient reference is 32 bytes", () => {
     expect(saltRecipientRef("x", SALT).length).toBe(32);
   });

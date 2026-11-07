@@ -39,8 +39,14 @@ export function saltRecipientRef(reference: string, salt: Uint8Array): Buffer {
   return Buffer.from(sha256(buf));
 }
 
+const MAX_I128 = (1n << 127n) - 1n;
+const MIN_I128 = -(1n << 127n);
+
 /** 16-byte big-endian two's-complement encoding of an i128 amount. */
 export function amountToBe16(amount: bigint): Buffer {
+  if (amount < MIN_I128 || amount > MAX_I128) {
+    throw new RangeError("amount out of i128 range");
+  }
   const b = Buffer.alloc(16);
   let v = amount < 0n ? (1n << 128n) + amount : amount;
   for (let i = 15; i >= 0; i--) {
