@@ -42,7 +42,11 @@ export function saltRecipientRef(reference: string, salt: Uint8Array): Buffer {
 const MAX_I128 = (1n << 127n) - 1n;
 const MIN_I128 = -(1n << 127n);
 
-/** 16-byte big-endian two's-complement encoding of an i128 amount. */
+/**
+ * 16-byte big-endian two's-complement encoding of an i128 amount.
+ * Matches Rust Soroban `i128::to_be_bytes()` byte-for-byte.
+ * Throws RangeError if amount exceeds signed 128-bit integer boundaries.
+ */
 export function amountToBe16(amount: bigint): Buffer {
   if (amount < MIN_I128 || amount > MAX_I128) {
     throw new RangeError("amount out of i128 range");
@@ -72,6 +76,11 @@ export function hashNode(a: Buffer, b: Buffer): Buffer {
   return Buffer.from(sha256(Buffer.concat([Buffer.from([NODE_DOMAIN]), lo, hi])));
 }
 
+/**
+ * Internal tree reduction.
+ * An odd tail node is carried up unchanged to the parent level without duplication;
+ * duplicating it would allow a malicious prover to forge a second valid inclusion path.
+ */
 function levels(leaves: Buffer[]): Buffer[][] {
   const out: Buffer[][] = [leaves];
   let level = leaves;

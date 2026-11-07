@@ -39,7 +39,13 @@ export type {
   NormalizedProgrammeStatus,
 } from "./views.js";
 
-export { createReceipt, verifyReceipt, receiptToJson, receiptFromJson } from "./receipt.js";
+export {
+  createReceipt,
+  createBatchReceipts,
+  verifyReceipt,
+  receiptToJson,
+  receiptFromJson,
+} from "./receipt.js";
 export type { BeneficiaryReceipt } from "./receipt.js";
 
 export { subscribeToEvents } from "./events.js";

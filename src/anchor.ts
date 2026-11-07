@@ -73,6 +73,10 @@ export interface MemoryAnchorOptions {
   quoteTtlSeconds?: number;
   /** Automatically transition payouts to "completed" after N poll cycles. Defaults to 1. */
   pollsToComplete?: number;
+  /** Artificial latency in milliseconds to simulate network lag. Defaults to 0. */
+  latencyMs?: number;
+  /** Probability (0 to 1) that an initiated payout transitions directly to "failed". Defaults to 0. */
+  failureRate?: number;
 }
 
 /**
@@ -85,6 +89,8 @@ export class MemoryAnchor implements Anchor {
   private readonly rate: number;
   private readonly quoteTtlSeconds: number;
   private readonly pollsToComplete: number;
+  private readonly latencyMs: number;
+  private readonly failureRate: number;
   private quoteCounter = 0;
   private payoutCounter = 0;
 
@@ -92,9 +98,18 @@ export class MemoryAnchor implements Anchor {
     this.rate = options.rate ?? 1;
     this.quoteTtlSeconds = options.quoteTtlSeconds ?? 300;
     this.pollsToComplete = options.pollsToComplete ?? 1;
+    this.latencyMs = options.latencyMs ?? 0;
+    this.failureRate = options.failureRate ?? 0;
+  }
+
+  private async delay(): Promise<void> {
+    if (this.latencyMs > 0) {
+      await new Promise((r) => setTimeout(r, this.latencyMs));
+    }
   }
 
   async quote(sourceAmount: bigint, destinationAsset: string): Promise<Quote> {
+    await this.delay();
     if (sourceAmount <= 0n) {
       throw new RangeError("sourceAmount must be strictly positive");
     }
@@ -121,6 +136,7 @@ export class MemoryAnchor implements Anchor {
   }
 
   async initiatePayout(request: PayoutRequest): Promise<PayoutStatus> {
+    await this.delay();
     const quote = this.quotes.get(request.quoteId);
     if (!quote) {
       throw new Error(`Quote not found: ${request.quoteId}`);
@@ -142,17 +158,26 @@ export class MemoryAnchor implements Anchor {
 
     this.payoutCounter++;
     const payoutId = `payout-${this.payoutCounter}-${Date.now()}`;
-    const status: PayoutStatus = {
-      payoutId,
-      state: "processing",
-      detail: `Payout initiated for ${quote.destinationAmount} ${quote.destinationAsset}`,
-    };
+
+    const isSimulatedFailure = this.failureRate > 0 && Math.random() < this.failureRate;
+    const status: PayoutStatus = isSimulatedFailure
+      ? {
+          payoutId,
+          state: "failed",
+          detail: "Simulated payout rail delivery failure",
+        }
+      : {
+          payoutId,
+          state: "processing",
+          detail: `Payout initiated for ${quote.destinationAmount} ${quote.destinationAsset}`,
+        };
 
     this.payouts.set(payoutId, { status, polls: 0 });
     return status;
   }
 
   async pollStatus(payoutId: string): Promise<PayoutStatus> {
+    await this.delay();
     const entry = this.payouts.get(payoutId);
     if (!entry) {
       throw new Error(`Payout not found: ${payoutId}`);
@@ -176,5 +201,16 @@ export class MemoryAnchor implements Anchor {
 
   get payoutCount(): number {
     return this.payouts.size;
+  }
+
+  /**
+   * Clears all in-memory quotes and payouts and resets counters.
+   * Useful for test isolation between simulation steps.
+   */
+  reset(): void {
+    this.quotes.clear();
+    this.payouts.clear();
+    this.quoteCounter = 0;
+    this.payoutCounter = 0;
   }
 }

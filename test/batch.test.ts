@@ -99,4 +99,25 @@ describe("amountToBe16", () => {
   it("salted recipient reference is 32 bytes", () => {
     expect(saltRecipientRef("x", SALT).length).toBe(32);
   });
+
+  it("elevates odd-tail nodes without duplicating leaves across levels", () => {
+    // 3 leaves: leaf0, leaf1, leaf2
+    // Level 0: [leaf0, leaf1, leaf2]
+    // Level 1: [hashNode(leaf0, leaf1), leaf2] (tail node carried up)
+    // Level 2: [hashNode(hashNode(leaf0, leaf1), leaf2)] (root)
+    const entries = [
+      { reference: "r0", amount: 10n },
+      { reference: "r1", amount: 20n },
+      { reference: "r2", amount: 30n },
+    ];
+    const b = buildBatch(entries, SALT);
+    const n01 = hashNode(b.leaves[0], b.leaves[1]);
+    const expectedRoot = hashNode(n01, b.leaves[2]);
+    expect(b.root.toString("hex")).toBe(expectedRoot.toString("hex"));
+
+    // Inclusion proof for leaf 2 should only have 1 sibling (n01)
+    const proof2 = inclusionProof(b, 2);
+    expect(proof2.length).toBe(1);
+    expect(proof2[0].toString("hex")).toBe(n01.toString("hex"));
+  });
 });

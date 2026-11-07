@@ -75,4 +75,22 @@ describe("withRetry", () => {
     ).rejects.toThrow("503 Service Unavailable");
     expect(fn).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
   });
+
+  it("aborts retry loop immediately when AbortSignal is triggered", async () => {
+    const controller = new AbortController();
+    const fn = vi.fn().mockImplementation(() => {
+      controller.abort();
+      return Promise.reject(new Error("503 Service Unavailable"));
+    });
+
+    await expect(
+      withRetry(fn, {
+        maxRetries: 3,
+        signal: controller.signal,
+        sleep: () => Promise.resolve(),
+      }),
+    ).rejects.toThrow();
+
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 });

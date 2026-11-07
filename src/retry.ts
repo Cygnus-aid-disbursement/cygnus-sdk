@@ -1,18 +1,23 @@
+/**
+ * Configuration options for the `withRetry` exponential backoff loop.
+ */
 export interface RetryOptions {
-  /** Maximum number of retry attempts. Defaults to 3. */
+  /** Maximum number of retry attempts before propagating failure. Defaults to 3. */
   maxRetries?: number;
-  /** Initial delay in milliseconds before the first retry. Defaults to 500ms. */
+  /** Initial delay in milliseconds before the first retry attempt. Defaults to 500ms. */
   initialDelayMs?: number;
-  /** Maximum delay cap in milliseconds. Defaults to 10,000ms. */
+  /** Maximum delay cap in milliseconds preventing unbounded backoff times. Defaults to 10,000ms. */
   maxDelayMs?: number;
-  /** Exponential backoff multiplier. Defaults to 2. */
+  /** Exponential backoff multiplier base. Defaults to 2. */
   backoffFactor?: number;
-  /** Custom predicate deciding if an error can be retried. Defaults to isRetryableError. */
+  /** Custom predicate deciding if an error can be retried. Defaults to `isRetryableError`. */
   isRetryable?: (error: unknown) => boolean;
-  /** Optional callback invoked on each retry attempt. */
+  /** Optional telemetry or logging callback invoked before sleeping on each retry attempt. */
   onRetry?: (error: unknown, attempt: number, delayMs: number) => void;
   /** Custom sleep implementation, for fast testing without real wall-clock delays. */
   sleep?: (ms: number) => Promise<void>;
+  /** Optional AbortSignal to cancel further retry attempts immediately without waiting. */
+  signal?: AbortSignal;
 }
 
 const DEFAULT_MAX_RETRIES = 3;
@@ -25,6 +30,9 @@ const DEFAULT_BACKOFF_FACTOR = 2;
  * - Rate limiting (HTTP 429 / "Too Many Requests")
  * - Transient server failures (HTTP 500, 502, 503, 504)
  * - Network disruptions (fetch failed, ECONNRESET, ETIMEDOUT, ENOTFOUND)
+ *
+ * Non-transient contract errors, signature validation failures, and invalid input errors
+ * are excluded and fail immediately.
  */
 export function isRetryableError(error: unknown): boolean {
   if (!error) return false;
@@ -59,6 +67,11 @@ export function isRetryableError(error: unknown): boolean {
 
 /**
  * Execute an asynchronous function with exponential backoff and full jitter.
+ *
+ * Algorithm:
+ * - Backoff delay cap: `min(maxDelayMs, initialDelayMs * (backoffFactor ^ (attempt - 1)))`
+ * - Full jitter: `random(0, backoffDelay)` to decorrelate concurrent client retries and avoid thundering herds.
+ * - Cancellation: Checked before execution and during sleep intervals via `AbortSignal`.
  */
 export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}): Promise<T> {
   const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES;
@@ -70,11 +83,15 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}
 
   let attempt = 0;
   for (;;) {
+    if (opts.signal?.aborted) {
+      throw opts.signal.reason ?? new Error("The operation was aborted");
+    }
+
     try {
       return await fn();
     } catch (err) {
       attempt++;
-      if (attempt > maxRetries || !isRetryable(err)) {
+      if (attempt > maxRetries || !isRetryable(err) || opts.signal?.aborted) {
         throw err;
       }
 
