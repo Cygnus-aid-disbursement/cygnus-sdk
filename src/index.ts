@@ -49,6 +49,7 @@ export {
   BatchIndexOutOfRangeError,
   createContractError,
   parseContractError,
+  unwrapContractResult,
 } from "./errors.js";
 
 // Re-export the generated contract types so consumers get one import surface.

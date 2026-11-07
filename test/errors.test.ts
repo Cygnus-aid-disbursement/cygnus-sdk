@@ -19,6 +19,7 @@ import {
   BatchIndexOutOfRangeError,
   createContractError,
   parseContractError,
+  unwrapContractResult,
 } from "../src/errors.js";
 
 describe("Cygnus Error hierarchy", () => {
@@ -108,5 +109,37 @@ describe("parseContractError", () => {
     expect(parseContractError(undefined)).toBeUndefined();
     expect(parseContractError("Something unrelated went wrong")).toBeUndefined();
     expect(parseContractError(12345)).toBeUndefined();
+  });
+
+  describe("unwrapContractResult", () => {
+    it("returns value if result is Ok", () => {
+      const okResult = {
+        isOk: () => true,
+        unwrap: () => 42n,
+      };
+      expect(unwrapContractResult(okResult)).toBe(42n);
+    });
+
+    it("throws typed CygnusContractError if result is Err with recognized error", () => {
+      const errResult = {
+        isOk: () => false,
+        unwrap: () => {
+          throw new Error("Should not be called");
+        },
+        unwrapErr: () => "HostError: Error(Contract, #1)",
+      };
+      expect(() => unwrapContractResult(errResult)).toThrow(ProgrammeNotFoundError);
+    });
+
+    it("falls back to unwrap() if unwrapErr is unrecognized", () => {
+      const genericErrResult = {
+        isOk: () => false,
+        unwrap: () => {
+          throw new Error("Generic failure");
+        },
+        unwrapErr: () => "unrecognized",
+      };
+      expect(() => unwrapContractResult(genericErrResult)).toThrow("Generic failure");
+    });
   });
 });

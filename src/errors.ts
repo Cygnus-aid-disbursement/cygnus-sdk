@@ -241,3 +241,22 @@ export function parseContractError(err: unknown): CygnusContractError | undefine
 
   return undefined;
 }
+
+/**
+ * Unwrap a contract Result, throwing a typed CygnusContractError if the result is an error.
+ */
+export function unwrapContractResult<T>(res: {
+  isOk: () => boolean;
+  unwrap: () => T;
+  unwrapErr?: () => unknown;
+}): T {
+  if (res.isOk()) {
+    return res.unwrap();
+  }
+  const raw = res.unwrapErr ? res.unwrapErr() : undefined;
+  const parsed = parseContractError(raw);
+  if (parsed) {
+    throw parsed;
+  }
+  return res.unwrap();
+}
