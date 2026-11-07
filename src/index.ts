@@ -39,6 +39,9 @@ export type {
   NormalizedProgrammeStatus,
 } from "./views.js";
 
+export { createReceipt, verifyReceipt, receiptToJson, receiptFromJson } from "./receipt.js";
+export type { BeneficiaryReceipt } from "./receipt.js";
+
 export { StubAnchor, NotImplementedError } from "./anchor.js";
 export type { Anchor, Quote, PayoutRequest, PayoutState, PayoutStatus } from "./anchor.js";
 
