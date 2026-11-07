@@ -118,10 +118,36 @@ describe("normalizeProgramme", () => {
     expect(view.fundedPercentage).toBe(80);
     expect(view.releasedPercentage).toBe(50);
     expect(view.disbursedPercentage).toBe(20);
+    expect(view.isFullyFunded).toBe(false);
+    expect(view.isFullyDisbursed).toBe(false);
     expect(view.isEnded).toBe(false);
     expect(view.approverSummary).toBe("Single(G_APPROVER)");
     expect(view.milestones.length).toBe(1);
     expect(view.milestones[0].status).toBe("approved");
+  });
+
+  it("flags isFullyFunded and isFullyDisbursed when totals match", () => {
+    const prog: Programme = {
+      id: 20n,
+      sponsor: "S",
+      implementer: "I",
+      asset: "USDC",
+      total: 1000n,
+      funded: 1000n,
+      released: 1000n,
+      disbursed: 1000n,
+      created_at: 100n,
+      end_by: 200n,
+      batch_count: 5,
+      status: { tag: "Active", values: undefined },
+      approver: { tag: "Single", values: ["A"] },
+      metadata_hash: hash,
+      milestones: [],
+      milestone_states: [],
+    };
+    const view = normalizeProgramme(prog);
+    expect(view.isFullyFunded).toBe(true);
+    expect(view.isFullyDisbursed).toBe(true);
   });
 
   it("handles zero denominator safely", () => {
