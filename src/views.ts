@@ -63,6 +63,12 @@ function isoStringFromUnixSeconds(seconds: number | bigint): string {
   return new Date(Number(seconds) * 1000).toISOString();
 }
 
+/**
+ * Formats a Soroban approver configuration into a concise, human-readable summary.
+ * - Single: "Single(GB...)"
+ * - Panel: "Panel(M of N)"
+ * - Oracle: "Oracle(GB...)"
+ */
 export function formatApproverConfig(config: ApproverConfig): string {
   switch (config.tag) {
     case "Single":
@@ -87,6 +93,10 @@ export function parseProgrammeStatus(status: ProgrammeStatus): NormalizedProgram
   return status.tag.toLowerCase() as NormalizedProgrammeStatus;
 }
 
+/**
+ * Normalizes an on-chain milestone and optional milestone state into an ergonomic display view.
+ * Computes overdue status against the current or provided timestamp and decodes binary hashes to hex.
+ */
 export function normalizeMilestone(
   milestone: Milestone,
   index: number,
@@ -127,6 +137,10 @@ export function normalizeMilestone(
   return view;
 }
 
+/**
+ * Normalizes an on-chain Programme data structure into a dashboard-ready display model.
+ * Computes remaining budget pools, progress percentages, ISO timestamps, and child milestone views.
+ */
 export function normalizeProgramme(
   programme: Programme,
   nowSeconds: number = Math.floor(Date.now() / 1000),
