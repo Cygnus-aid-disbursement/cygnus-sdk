@@ -13,6 +13,8 @@ export interface RetryOptions {
   onRetry?: (error: unknown, attempt: number, delayMs: number) => void;
   /** Custom sleep implementation, for fast testing without real wall-clock delays. */
   sleep?: (ms: number) => Promise<void>;
+  /** Optional AbortSignal to cancel further retry attempts immediately. */
+  signal?: AbortSignal;
 }
 
 const DEFAULT_MAX_RETRIES = 3;
@@ -70,11 +72,15 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}
 
   let attempt = 0;
   for (;;) {
+    if (opts.signal?.aborted) {
+      throw opts.signal.reason ?? new Error("The operation was aborted");
+    }
+
     try {
       return await fn();
     } catch (err) {
       attempt++;
-      if (attempt > maxRetries || !isRetryable(err)) {
+      if (attempt > maxRetries || !isRetryable(err) || opts.signal?.aborted) {
         throw err;
       }
 
