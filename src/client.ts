@@ -1,5 +1,5 @@
-import { rpc, scValToNative } from "@stellar/stellar-sdk";
-import type { ClientOptions } from "@stellar/stellar-sdk/contract";
+import { Keypair, rpc, scValToNative } from "@stellar/stellar-sdk";
+import { basicNodeSigner, type ClientOptions } from "@stellar/stellar-sdk/contract";
 import {
   Client as GeneratedClient,
   type ApproverConfig,
@@ -84,6 +84,49 @@ export class Cygnus {
       publicKey: options.publicKey,
       signTransaction: options.signTransaction,
       allowHttp: options.allowHttp,
+    });
+  }
+
+  /**
+   * Instantiate a Cygnus client from environment variables.
+   * Reads:
+   * - CYGNUS_NETWORK (defaults to "testnet")
+   * - CYGNUS_CONTRACT_ID
+   * - CYGNUS_RPC_URL
+   * - CYGNUS_NETWORK_PASSPHRASE
+   * - STELLAR_SECRET (automatically configures Keypair signer)
+   * - STELLAR_PUBLIC_KEY
+   * - CYGNUS_ALLOW_HTTP ("true" or "1")
+   */
+  static fromEnv(env: Record<string, string | undefined> = process.env): Cygnus {
+    const network = (env.CYGNUS_NETWORK as NetworkName) || "testnet";
+    const contractId = env.CYGNUS_CONTRACT_ID;
+    const rpcUrl = env.CYGNUS_RPC_URL;
+    const networkPassphrase = env.CYGNUS_NETWORK_PASSPHRASE;
+    const allowHttp = env.CYGNUS_ALLOW_HTTP === "true" || env.CYGNUS_ALLOW_HTTP === "1";
+
+    let publicKey = env.STELLAR_PUBLIC_KEY;
+    let signTransaction: ClientOptions["signTransaction"] | undefined = undefined;
+
+    const secret = env.STELLAR_SECRET;
+    if (secret) {
+      const kp = Keypair.fromSecret(secret);
+      publicKey = publicKey ?? kp.publicKey();
+      const passphrase =
+        networkPassphrase ??
+        deployments[network]?.networkPassphrase ??
+        deployments.testnet.networkPassphrase;
+      signTransaction = basicNodeSigner(kp, passphrase).signTransaction;
+    }
+
+    return new Cygnus({
+      network,
+      contractId,
+      rpcUrl,
+      networkPassphrase,
+      publicKey,
+      signTransaction,
+      allowHttp,
     });
   }
 

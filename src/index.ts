@@ -25,6 +25,23 @@ export {
 } from "./hashing.js";
 export type { JsonValue } from "./hashing.js";
 
+export {
+  normalizeProgramme,
+  normalizeMilestone,
+  formatApproverConfig,
+  parseMilestoneStatus,
+  parseProgrammeStatus,
+} from "./views.js";
+export type {
+  ProgrammeView,
+  MilestoneView,
+  NormalizedMilestoneStatus,
+  NormalizedProgrammeStatus,
+} from "./views.js";
+
+export { createReceipt, verifyReceipt, receiptToJson, receiptFromJson } from "./receipt.js";
+export type { BeneficiaryReceipt } from "./receipt.js";
+
 export { StubAnchor, NotImplementedError } from "./anchor.js";
 export type { Anchor, Quote, PayoutRequest, PayoutState, PayoutStatus } from "./anchor.js";
 
