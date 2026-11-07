@@ -28,6 +28,30 @@ export type { JsonValue } from "./hashing.js";
 export { StubAnchor, NotImplementedError } from "./anchor.js";
 export type { Anchor, Quote, PayoutRequest, PayoutState, PayoutStatus } from "./anchor.js";
 
+export {
+  ContractErrorCode,
+  CONTRACT_ERROR_NAMES,
+  CygnusError,
+  CygnusContractError,
+  ProgrammeNotFoundError,
+  AlreadyClosedError,
+  MilestoneIndexOutOfRangeError,
+  MilestoneNotClaimableError,
+  MilestoneNotClaimedError,
+  MilestoneAlreadyResolvedError,
+  InsufficientFundingError,
+  InsufficientReleasedError,
+  NotEndedError,
+  InvalidAmountError,
+  InvalidBatchError,
+  ApproverKindUnimplementedError,
+  NothingToRefundError,
+  BatchIndexOutOfRangeError,
+  createContractError,
+  parseContractError,
+  unwrapContractResult,
+} from "./errors.js";
+
 // Re-export the generated contract types so consumers get one import surface.
 export type {
   Programme,
