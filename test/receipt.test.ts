@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildBatch } from "../src/batch.js";
 import {
+  createBatchReceipts,
   createReceipt,
   receiptFromJson,
   receiptToJson,
@@ -17,6 +18,32 @@ describe("Beneficiary Receipts", () => {
     { reference: "charlie", amount: 400n },
   ];
   const batch = buildBatch(entries, SALT);
+
+  it("creates batch receipts for all entries in a batch", () => {
+    const receipts = createBatchReceipts({
+      programmeId: 10n,
+      batchIndex: 2,
+      batch,
+      amounts: [100n, 250n, 400n],
+    });
+
+    expect(receipts.length).toBe(3);
+    for (let i = 0; i < 3; i++) {
+      expect(verifyReceipt(receipts[i], batch.root.toString("hex"))).toBe(true);
+      expect(receipts[i].amount).toBe(entries[i].amount.toString());
+    }
+  });
+
+  it("throws if amounts count does not match batch leaves count", () => {
+    expect(() =>
+      createBatchReceipts({
+        programmeId: 10n,
+        batchIndex: 2,
+        batch,
+        amounts: [100n], // only 1 amount, but batch has 3 leaves
+      }),
+    ).toThrow("Amounts count (1) must match batch leaves count (3)");
+  });
 
   it("creates a valid receipt for an entry", () => {
     const receipt = createReceipt({
