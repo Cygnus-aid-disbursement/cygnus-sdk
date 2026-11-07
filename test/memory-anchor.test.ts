@@ -105,4 +105,20 @@ describe("MemoryAnchor", () => {
     const elapsed = Date.now() - start;
     expect(elapsed).toBeGreaterThanOrEqual(20);
   });
+
+  it("clears quotes and payouts when reset() is called", async () => {
+    const anchor = new MemoryAnchor();
+    const quote = await anchor.quote(100n, "USD");
+    await anchor.initiatePayout({
+      quoteId: quote.id,
+      recipientRef: Buffer.alloc(32, 1),
+      sourceAmount: 100n,
+    });
+    expect(anchor.quoteCount).toBe(1);
+    expect(anchor.payoutCount).toBe(1);
+
+    anchor.reset();
+    expect(anchor.quoteCount).toBe(0);
+    expect(anchor.payoutCount).toBe(0);
+  });
 });

@@ -202,4 +202,15 @@ export class MemoryAnchor implements Anchor {
   get payoutCount(): number {
     return this.payouts.size;
   }
+
+  /**
+   * Clears all in-memory quotes and payouts and resets counters.
+   * Useful for test isolation between simulation steps.
+   */
+  reset(): void {
+    this.quotes.clear();
+    this.payouts.clear();
+    this.quoteCounter = 0;
+    this.payoutCounter = 0;
+  }
 }
