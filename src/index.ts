@@ -1,4 +1,4 @@
-export { Cygnus } from "./client.js";
+export { Cygnus, decodeEvent } from "./client.js";
 export type { CygnusOptions, CygnusEvent } from "./client.js";
 
 export { deployments } from "./deployments.js";

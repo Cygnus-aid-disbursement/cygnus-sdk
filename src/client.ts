@@ -69,6 +69,11 @@ export class Cygnus {
   constructor(options: CygnusOptions = {}) {
     const network = options.network ?? "testnet";
     const deployment = deployments[network];
+    if (!deployment) {
+      throw new Error(
+        `Unknown network "${String(network)}". Available networks: ${Object.keys(deployments).join(", ")}`,
+      );
+    }
     this.contractId = options.contractId ?? deployment.contracts.programme;
     this.networkPassphrase = options.networkPassphrase ?? deployment.networkPassphrase;
     this.rpcUrl = options.rpcUrl ?? DEFAULT_RPC_URL;
@@ -217,35 +222,47 @@ export class Cygnus {
   }
 }
 
-function decodeEvent(
+export function decodeEvent(
   topics: unknown[],
   data: Record<string, unknown> | unknown,
 ): CygnusEvent | undefined {
+  if (!Array.isArray(topics) || topics.length < 2) return undefined;
+  if (!data || typeof data !== "object") return undefined;
   const name = topics[0];
-  const programmeId = topics[1] as bigint;
+  const programmeId =
+    typeof topics[1] === "bigint" ? topics[1] : BigInt(topics[1] as number | string);
   const d = data as Record<string, unknown>;
   switch (name) {
     case "ProgrammeCreated":
+      if (!d.sponsor || !d.implementer || d.total === undefined) return undefined;
       return {
         type: "ProgrammeCreated",
         programmeId,
-        sponsor: d.sponsor as string,
-        implementer: d.implementer as string,
-        total: d.total as bigint,
+        sponsor: String(d.sponsor),
+        implementer: String(d.implementer),
+        total: BigInt(d.total as number | string | bigint),
       };
     case "ProgrammeFunded":
-      return { type: "ProgrammeFunded", programmeId, amount: d.amount as bigint };
+      if (d.amount === undefined) return undefined;
+      return {
+        type: "ProgrammeFunded",
+        programmeId,
+        amount: BigInt(d.amount as number | string | bigint),
+      };
     case "MilestoneClaimed":
+      if (d.milestone_index === undefined || !d.evidence_hash) return undefined;
       return {
         type: "MilestoneClaimed",
         programmeId,
         milestoneIndex: Number(d.milestone_index),
         evidenceHash: d.evidence_hash as Buffer,
-        claimedLate: d.claimed_late as boolean,
+        claimedLate: Boolean(d.claimed_late),
       };
     case "MilestoneApproved":
+      if (d.milestone_index === undefined) return undefined;
       return { type: "MilestoneApproved", programmeId, milestoneIndex: Number(d.milestone_index) };
     case "MilestoneRejected":
+      if (d.milestone_index === undefined || !d.reason_hash) return undefined;
       return {
         type: "MilestoneRejected",
         programmeId,
@@ -253,16 +270,29 @@ function decodeEvent(
         reasonHash: d.reason_hash as Buffer,
       };
     case "BatchDisbursed":
+      if (
+        d.batch_index === undefined ||
+        !d.root ||
+        d.total === undefined ||
+        d.count === undefined
+      ) {
+        return undefined;
+      }
       return {
         type: "BatchDisbursed",
         programmeId,
         batchIndex: Number(d.batch_index),
         root: d.root as Buffer,
-        total: d.total as bigint,
+        total: BigInt(d.total as number | string | bigint),
         count: Number(d.count),
       };
     case "ProgrammeRefunded":
-      return { type: "ProgrammeRefunded", programmeId, amount: d.amount as bigint };
+      if (d.amount === undefined) return undefined;
+      return {
+        type: "ProgrammeRefunded",
+        programmeId,
+        amount: BigInt(d.amount as number | string | bigint),
+      };
     default:
       return undefined;
   }

@@ -39,8 +39,14 @@ export function saltRecipientRef(reference: string, salt: Uint8Array): Buffer {
   return Buffer.from(sha256(buf));
 }
 
+const MAX_I128 = (1n << 127n) - 1n;
+const MIN_I128 = -(1n << 127n);
+
 /** 16-byte big-endian two's-complement encoding of an i128 amount. */
 export function amountToBe16(amount: bigint): Buffer {
+  if (amount < MIN_I128 || amount > MAX_I128) {
+    throw new RangeError("amount out of i128 range");
+  }
   const b = Buffer.alloc(16);
   let v = amount < 0n ? (1n << 128n) + amount : amount;
   for (let i = 15; i >= 0; i--) {
@@ -86,6 +92,14 @@ function levels(leaves: Buffer[]): Buffer[][] {
 export function buildBatch(entries: BatchEntry[], salt: Uint8Array): Batch {
   if (entries.length === 0) {
     throw new Error("a batch needs at least one entry");
+  }
+  if (!salt || salt.length === 0) {
+    throw new Error("salt must not be empty");
+  }
+  for (let i = 0; i < entries.length; i++) {
+    if (entries[i].amount < 0n) {
+      throw new RangeError(`entry ${i} amount cannot be negative`);
+    }
   }
   const recipientRefs = entries.map((e) => saltRecipientRef(e.reference, salt));
   const leaves = recipientRefs.map((ref, i) => hashLeaf(ref, entries[i].amount));

@@ -55,13 +55,13 @@ export class NotImplementedError extends Error {
  * anchor exists.
  */
 export class StubAnchor implements Anchor {
-  async quote(): Promise<Quote> {
+  async quote(_sourceAmount?: bigint, _destinationAsset?: string): Promise<Quote> {
     throw new NotImplementedError("Anchor.quote");
   }
-  async initiatePayout(): Promise<PayoutStatus> {
+  async initiatePayout(_request?: PayoutRequest): Promise<PayoutStatus> {
     throw new NotImplementedError("Anchor.initiatePayout");
   }
-  async pollStatus(): Promise<PayoutStatus> {
+  async pollStatus(_payoutId?: string): Promise<PayoutStatus> {
     throw new NotImplementedError("Anchor.pollStatus");
   }
 }
