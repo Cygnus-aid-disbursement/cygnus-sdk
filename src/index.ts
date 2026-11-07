@@ -42,6 +42,9 @@ export type {
 export { createReceipt, verifyReceipt, receiptToJson, receiptFromJson } from "./receipt.js";
 export type { BeneficiaryReceipt } from "./receipt.js";
 
+export { subscribeToEvents } from "./events.js";
+export type { EventCursor, EventSubscription, EventSubscriptionOptions } from "./events.js";
+
 export { withRetry, isRetryableError } from "./retry.js";
 export type { RetryOptions } from "./retry.js";
 
