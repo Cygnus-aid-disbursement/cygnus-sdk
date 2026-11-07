@@ -1,5 +1,6 @@
 import { Keypair, rpc, scValToNative } from "@stellar/stellar-sdk";
 import { basicNodeSigner, type ClientOptions } from "@stellar/stellar-sdk/contract";
+import { withRetry, type RetryOptions } from "./retry.js";
 import {
   Client as GeneratedClient,
   type ApproverConfig,
@@ -22,6 +23,8 @@ export interface CygnusOptions {
   publicKey?: string;
   signTransaction?: ClientOptions["signTransaction"];
   allowHttp?: boolean;
+  /** Configure RPC retry options. Set to false to disable retries. */
+  retry?: RetryOptions | boolean;
 }
 
 // Event names match the #[contractevent] structs in the contract. programme_id
@@ -64,6 +67,7 @@ export class Cygnus {
   readonly raw: GeneratedClient;
   readonly contractId: string;
   readonly networkPassphrase: string;
+  readonly retryOptions: RetryOptions | false;
   private readonly rpcUrl: string;
 
   constructor(options: CygnusOptions = {}) {
@@ -77,6 +81,8 @@ export class Cygnus {
     this.contractId = options.contractId ?? deployment.contracts.programme;
     this.networkPassphrase = options.networkPassphrase ?? deployment.networkPassphrase;
     this.rpcUrl = options.rpcUrl ?? DEFAULT_RPC_URL;
+    this.retryOptions =
+      options.retry === false ? false : typeof options.retry === "object" ? options.retry : {};
     this.raw = new GeneratedClient({
       contractId: this.contractId,
       networkPassphrase: this.networkPassphrase,
@@ -85,6 +91,13 @@ export class Cygnus {
       signTransaction: options.signTransaction,
       allowHttp: options.allowHttp,
     });
+  }
+
+  private async executeWithRetry<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.retryOptions === false) {
+      return fn();
+    }
+    return withRetry(fn, this.retryOptions);
   }
 
   /**
@@ -104,6 +117,7 @@ export class Cygnus {
     const rpcUrl = env.CYGNUS_RPC_URL;
     const networkPassphrase = env.CYGNUS_NETWORK_PASSPHRASE;
     const allowHttp = env.CYGNUS_ALLOW_HTTP === "true" || env.CYGNUS_ALLOW_HTTP === "1";
+    const retry = env.CYGNUS_RETRY === "false" ? false : undefined;
 
     let publicKey = env.STELLAR_PUBLIC_KEY;
     let signTransaction: ClientOptions["signTransaction"] | undefined = undefined;
@@ -127,6 +141,7 @@ export class Cygnus {
       publicKey,
       signTransaction,
       allowHttp,
+      retry,
     });
   }
 
@@ -192,12 +207,16 @@ export class Cygnus {
   // --- read calls: simulate and return the value ---------------------------
 
   async getProgramme(programmeId: bigint): Promise<Programme | undefined> {
-    return (await this.raw.get_programme({ programme_id: programmeId })).result;
+    return this.executeWithRetry(async () => {
+      return (await this.raw.get_programme({ programme_id: programmeId })).result;
+    });
   }
 
   async getBatch(programmeId: bigint, batchIndex: number): Promise<DisbursementBatch | undefined> {
-    return (await this.raw.get_batch({ programme_id: programmeId, batch_index: batchIndex }))
-      .result;
+    return this.executeWithRetry(async () => {
+      return (await this.raw.get_batch({ programme_id: programmeId, batch_index: batchIndex }))
+        .result;
+    });
   }
 
   async verifyInclusion(
@@ -206,19 +225,23 @@ export class Cygnus {
     leaf: Buffer,
     proof: Buffer[],
   ): Promise<boolean> {
-    return (
-      await this.raw.verify_inclusion({
-        programme_id: programmeId,
-        batch_index: batchIndex,
-        leaf,
-        proof,
-      })
-    ).result;
+    return this.executeWithRetry(async () => {
+      return (
+        await this.raw.verify_inclusion({
+          programme_id: programmeId,
+          batch_index: batchIndex,
+          leaf,
+          proof,
+        })
+      ).result;
+    });
   }
 
   /** The contract's canonical leaf hash, for cross-checking the SDK's own. */
   async hashLeafOnChain(recipientRef: Buffer, amount: bigint): Promise<Buffer> {
-    return (await this.raw.hash_leaf({ recipient_ref: recipientRef, amount })).result;
+    return this.executeWithRetry(async () => {
+      return (await this.raw.hash_leaf({ recipient_ref: recipientRef, amount })).result;
+    });
   }
 
   /**
@@ -249,19 +272,21 @@ export class Cygnus {
    * underlying rpc server.
    */
   async events(startLedger: number): Promise<CygnusEvent[]> {
-    const server = new rpc.Server(this.rpcUrl, { allowHttp: this.rpcUrl.startsWith("http:") });
-    const { events } = await server.getEvents({
-      startLedger,
-      filters: [{ type: "contract", contractIds: [this.contractId] }],
+    return this.executeWithRetry(async () => {
+      const server = new rpc.Server(this.rpcUrl, { allowHttp: this.rpcUrl.startsWith("http:") });
+      const { events } = await server.getEvents({
+        startLedger,
+        filters: [{ type: "contract", contractIds: [this.contractId] }],
+      });
+      return events
+        .map((e) =>
+          decodeEvent(
+            e.topic.map((t) => scValToNative(t)),
+            scValToNative(e.value),
+          ),
+        )
+        .filter((e): e is CygnusEvent => e !== undefined);
     });
-    return events
-      .map((e) =>
-        decodeEvent(
-          e.topic.map((t) => scValToNative(t)),
-          scValToNative(e.value),
-        ),
-      )
-      .filter((e): e is CygnusEvent => e !== undefined);
   }
 }
 
