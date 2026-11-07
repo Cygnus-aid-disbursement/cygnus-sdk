@@ -85,4 +85,24 @@ describe("MemoryAnchor", () => {
     const anchor = new MemoryAnchor();
     await expect(anchor.pollStatus("non-existent")).rejects.toThrow("Payout not found");
   });
+
+  it("simulates delivery failure when failureRate is set", async () => {
+    const anchor = new MemoryAnchor({ failureRate: 1.0 }); // 100% failure
+    const quote = await anchor.quote(10n, "USD");
+    const payout = await anchor.initiatePayout({
+      quoteId: quote.id,
+      recipientRef: Buffer.alloc(32, 1),
+      sourceAmount: 10n,
+    });
+    expect(payout.state).toBe("failed");
+    expect(payout.detail).toContain("Simulated payout rail delivery failure");
+  });
+
+  it("honors artificial latency simulation", async () => {
+    const start = Date.now();
+    const anchor = new MemoryAnchor({ latencyMs: 25 });
+    await anchor.quote(10n, "USD");
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeGreaterThanOrEqual(20);
+  });
 });
