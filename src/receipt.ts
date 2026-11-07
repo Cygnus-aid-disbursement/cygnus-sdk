@@ -52,6 +52,33 @@ export function createReceipt(args: {
 }
 
 /**
+ * Generate receipts for all entries in a disbursement batch at once.
+ */
+export function createBatchReceipts(args: {
+  programmeId: bigint;
+  batchIndex: number;
+  batch: Batch;
+  amounts: bigint[];
+  createdAtIso?: string;
+}): BeneficiaryReceipt[] {
+  if (args.amounts.length !== args.batch.leaves.length) {
+    throw new Error(
+      `Amounts count (${args.amounts.length}) must match batch leaves count (${args.batch.leaves.length})`,
+    );
+  }
+  return args.amounts.map((amount, i) =>
+    createReceipt({
+      programmeId: args.programmeId,
+      batchIndex: args.batchIndex,
+      entryIndex: i,
+      batch: args.batch,
+      amount,
+      createdAtIso: args.createdAtIso,
+    }),
+  );
+}
+
+/**
  * Verify a BeneficiaryReceipt cryptographically offline.
  * Recomputes the leaf from the salted recipientRef and amount, and folds the Merkle proof.
  */
