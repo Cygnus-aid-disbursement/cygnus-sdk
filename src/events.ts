@@ -1,10 +1,18 @@
 import type { Cygnus, CygnusEvent } from "./client.js";
 
+/**
+ * Tracks the state of an event streaming cursor across successive poll cycles.
+ */
 export interface EventCursor {
+  /** The latest ledger sequence reached by the polling cursor. */
   latestLedger: number;
+  /** Cumulative count of events yielded by this subscription instance. */
   eventsProcessed: number;
 }
 
+/**
+ * Options for configuring a live event streaming subscription.
+ */
 export interface EventSubscriptionOptions {
   /** The ledger sequence to start querying events from. */
   startLedger: number;
@@ -12,19 +20,28 @@ export interface EventSubscriptionOptions {
   pollIntervalMs?: number;
   /** Callback invoked on each decoded Cygnus event. */
   onEvent: (event: CygnusEvent) => void;
-  /** Optional callback invoked on polling or decoding errors. */
+  /** Optional callback invoked on polling or decoding errors without killing the subscription. */
   onError?: (error: unknown) => void;
   /** Optional callback called with cursor state after processing each batch. */
   onCursorUpdate?: (cursor: EventCursor) => void;
 }
 
+/**
+ * Handle returned by `subscribeToEvents` to monitor or terminate polling.
+ */
 export interface EventSubscription {
+  /** Ceases polling and clears any pending timeout timers. */
   stop: () => void;
+  /** Returns true if the subscription is currently active and scheduling poll ticks. */
   isRunning: () => boolean;
 }
 
 /**
  * Start a polling subscription that streams decoded contract events as they settle on-chain.
+ *
+ * Polling begins immediately upon subscription and recurs every `pollIntervalMs`.
+ * When events are received, the cursor advances ledger-by-ledger.
+ * Call `stop()` on the returned handle to cleanly unsubscribe and cancel timers.
  */
 export function subscribeToEvents(
   client: Cygnus,
