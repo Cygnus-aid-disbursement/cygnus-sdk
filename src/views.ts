@@ -39,6 +39,8 @@ export interface ProgrammeView {
   fundedPercentage: number;
   releasedPercentage: number;
   disbursedPercentage: number;
+  isFullyFunded: boolean;
+  isFullyDisbursed: boolean;
   createdAt: number;
   createdAtIso: string;
   endBy: number;
@@ -159,6 +161,8 @@ export function normalizeProgramme(
     fundedPercentage: calcPercentage(funded, total),
     releasedPercentage: calcPercentage(released, total),
     disbursedPercentage: calcPercentage(disbursed, total),
+    isFullyFunded: total > 0n && funded >= total,
+    isFullyDisbursed: total > 0n && disbursed >= total,
     createdAt,
     createdAtIso: isoStringFromUnixSeconds(createdAt),
     endBy,
