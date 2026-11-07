@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Keypair } from "@stellar/stellar-sdk";
 import { Cygnus } from "../src/client.js";
 
@@ -50,6 +50,44 @@ describe("Cygnus client constructor", () => {
       });
       expect(client.raw.options.publicKey).toBe(kp.publicKey());
       expect(client.raw.options.signTransaction).toBeDefined();
+    });
+
+    it("respects CYGNUS_RETRY=false environment variable", () => {
+      const client = Cygnus.fromEnv({
+        CYGNUS_RETRY: "false",
+      });
+      expect(client.retryOptions).toBe(false);
+    });
+  });
+
+  describe("RPC retry integration", () => {
+    it("retries read calls when transient 429 rate limit is encountered", async () => {
+      const client = new Cygnus({
+        retry: {
+          maxRetries: 2,
+          initialDelayMs: 1,
+          sleep: () => Promise.resolve(),
+        },
+      });
+
+      const spy = vi
+        .spyOn(client.raw, "get_programme")
+        .mockRejectedValueOnce(new Error("429 Too Many Requests"))
+        .mockResolvedValueOnce({ result: undefined } as any);
+
+      const result = await client.getProgramme(10n);
+      expect(result).toBeUndefined();
+      expect(spy).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not retry when retry is explicitly set to false", async () => {
+      const client = new Cygnus({ retry: false });
+      const spy = vi
+        .spyOn(client.raw, "get_programme")
+        .mockRejectedValue(new Error("429 Too Many Requests"));
+
+      await expect(client.getProgramme(10n)).rejects.toThrow("429 Too Many Requests");
+      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 });
