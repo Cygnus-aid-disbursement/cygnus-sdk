@@ -20,6 +20,11 @@ describe("canonicalJson", () => {
   it("preserves array order", () => {
     expect(canonicalJson([3, 1, 2])).toBe("[3,1,2]");
   });
+
+  it("omits undefined properties in objects and turns undefined to null in arrays", () => {
+    expect(canonicalJson({ b: 1, a: undefined as unknown as any })).toBe('{"b":1}');
+    expect(canonicalJson([1, undefined as unknown as any, 3])).toBe("[1,null,3]");
+  });
 });
 
 describe("document hashes", () => {

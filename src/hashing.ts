@@ -29,10 +29,14 @@ export function canonicalJson(value: JsonValue): string {
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(",")}]`;
+    return `[${value.map((v) => (v === undefined ? "null" : canonicalJson(v))).join(",")}]`;
   }
-  const keys = Object.keys(value).sort();
-  const body = keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`).join(",");
+  const keys = Object.keys(value)
+    .filter((k) => (value as Record<string, unknown>)[k] !== undefined)
+    .sort();
+  const body = keys
+    .map((k) => `${JSON.stringify(k)}:${canonicalJson((value as Record<string, JsonValue>)[k])}`)
+    .join(",");
   return `{${body}}`;
 }
 
