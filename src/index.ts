@@ -48,8 +48,15 @@ export type { EventCursor, EventSubscription, EventSubscriptionOptions } from ".
 export { withRetry, isRetryableError } from "./retry.js";
 export type { RetryOptions } from "./retry.js";
 
-export { StubAnchor, NotImplementedError } from "./anchor.js";
-export type { Anchor, Quote, PayoutRequest, PayoutState, PayoutStatus } from "./anchor.js";
+export { StubAnchor, NotImplementedError, MemoryAnchor } from "./anchor.js";
+export type {
+  Anchor,
+  Quote,
+  PayoutRequest,
+  PayoutState,
+  PayoutStatus,
+  MemoryAnchorOptions,
+} from "./anchor.js";
 
 export {
   ContractErrorCode,
