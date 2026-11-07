@@ -93,6 +93,14 @@ export function buildBatch(entries: BatchEntry[], salt: Uint8Array): Batch {
   if (entries.length === 0) {
     throw new Error("a batch needs at least one entry");
   }
+  if (!salt || salt.length === 0) {
+    throw new Error("salt must not be empty");
+  }
+  for (let i = 0; i < entries.length; i++) {
+    if (entries[i].amount < 0n) {
+      throw new RangeError(`entry ${i} amount cannot be negative`);
+    }
+  }
   const recipientRefs = entries.map((e) => saltRecipientRef(e.reference, salt));
   const leaves = recipientRefs.map((ref, i) => hashLeaf(ref, entries[i].amount));
   const root = levels(leaves).at(-1)![0];

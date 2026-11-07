@@ -46,6 +46,16 @@ describe("buildBatch and inclusion proofs", () => {
   it("empty batch throws", () => {
     expect(() => buildBatch([], SALT)).toThrow();
   });
+
+  it("empty salt throws", () => {
+    expect(() => buildBatch([{ reference: "a", amount: 10n }], new Uint8Array(0))).toThrow(
+      "salt must not be empty",
+    );
+  });
+
+  it("negative amount throws RangeError", () => {
+    expect(() => buildBatch([{ reference: "a", amount: -5n }], SALT)).toThrow(RangeError);
+  });
 });
 
 describe("encoding matches the on-chain-validated demo vector", () => {
