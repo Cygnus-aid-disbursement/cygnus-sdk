@@ -69,6 +69,11 @@ export class Cygnus {
   constructor(options: CygnusOptions = {}) {
     const network = options.network ?? "testnet";
     const deployment = deployments[network];
+    if (!deployment) {
+      throw new Error(
+        `Unknown network "${String(network)}". Available networks: ${Object.keys(deployments).join(", ")}`,
+      );
+    }
     this.contractId = options.contractId ?? deployment.contracts.programme;
     this.networkPassphrase = options.networkPassphrase ?? deployment.networkPassphrase;
     this.rpcUrl = options.rpcUrl ?? DEFAULT_RPC_URL;
