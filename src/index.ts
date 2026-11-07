@@ -42,6 +42,9 @@ export type {
 export { createReceipt, verifyReceipt, receiptToJson, receiptFromJson } from "./receipt.js";
 export type { BeneficiaryReceipt } from "./receipt.js";
 
+export { withRetry, isRetryableError } from "./retry.js";
+export type { RetryOptions } from "./retry.js";
+
 export { StubAnchor, NotImplementedError } from "./anchor.js";
 export type { Anchor, Quote, PayoutRequest, PayoutState, PayoutStatus } from "./anchor.js";
 
