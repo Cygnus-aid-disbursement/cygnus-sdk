@@ -1,6 +1,12 @@
 import { hashLeaf, inclusionProof, verifyProof, type Batch } from "./batch.js";
 
-/** Portable, verifiable receipt given to a beneficiary as proof of inclusion. */
+/**
+ * Portable, verifiable receipt given to a beneficiary as proof of inclusion.
+ *
+ * Privacy property: The receipt carries only the salted `recipientRefHex` and
+ * the sibling path needed to reconstruct the published Merkle root. It never exposes
+ * raw beneficiary details or allows enumeration of other programme recipients.
+ */
 export interface BeneficiaryReceipt {
   version: "1";
   programmeId: string;
@@ -81,6 +87,10 @@ export function createBatchReceipts(args: {
 /**
  * Verify a BeneficiaryReceipt cryptographically offline.
  * Recomputes the leaf from the salted recipientRef and amount, and folds the Merkle proof.
+ *
+ * @param receipt - The beneficiary receipt object to verify.
+ * @param expectedRootHex - Optional expected Merkle root hex to match against.
+ * @returns boolean true if the proof is valid and reconstructs the expected root.
  */
 export function verifyReceipt(receipt: BeneficiaryReceipt, expectedRootHex?: string): boolean {
   if (!receipt || receipt.version !== "1") return false;
