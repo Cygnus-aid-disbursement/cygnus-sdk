@@ -1,24 +1,50 @@
-name: ci
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    name: Node ${{ matrix.node-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [20, 22]
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 9
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check code formatting
+        run: pnpm run lint
+
+      - name: Typecheck TypeScript
+        run: pnpm run typecheck
+
+      - name: Run unit test suite
+        run: pnpm run test
+
+      - name: Build package distribution
+        run: pnpm run build
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod
