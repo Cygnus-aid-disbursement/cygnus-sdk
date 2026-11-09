@@ -69,6 +69,7 @@ export {
   CONTRACT_ERROR_NAMES,
   CygnusError,
   CygnusContractError,
+  ValidationError,
   ProgrammeNotFoundError,
   AlreadyClosedError,
   MilestoneIndexOutOfRangeError,
@@ -87,6 +88,17 @@ export {
   parseContractError,
   unwrapContractResult,
 } from "./errors.js";
+
+export {
+  isValidStellarPublicKey,
+  isValidContractAddress,
+  isValidStellarAddress,
+  validateStellarAddress,
+  validateAmount,
+  validateSalt,
+  validateBatchEntriesCount,
+} from "./validation.js";
+export type { AmountValidationOptions } from "./validation.js";
 
 // Re-export the generated contract types so consumers get one import surface.
 export type {

@@ -43,6 +43,18 @@ export class CygnusError extends Error {
   }
 }
 
+/** Error thrown when client-side input validation fails before hitting RPC or contract. */
+export class ValidationError extends CygnusError {
+  readonly field?: string;
+
+  constructor(message: string, field?: string) {
+    super(field ? `${field}: ${message}` : message);
+    this.name = "ValidationError";
+    this.field = field;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
 /** Error thrown when a Soroban contract call returns an application error code. */
 export class CygnusContractError extends CygnusError {
   readonly code: number;

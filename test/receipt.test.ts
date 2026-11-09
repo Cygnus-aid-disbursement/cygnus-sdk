@@ -148,5 +148,25 @@ describe("Beneficiary Receipts", () => {
         }),
       ),
     ).toThrow(TypeError);
+    expect(() => receiptFromJson("invalid-json{")).toThrow(SyntaxError);
+  });
+
+  it("verifyReceipt returns false on invalid or corrupted receipt fields", () => {
+    expect(verifyReceipt(null as any)).toBe(false);
+    expect(verifyReceipt(undefined as any)).toBe(false);
+    expect(verifyReceipt({ version: "2" } as any)).toBe(false);
+
+    const validReceipt = createReceipt({
+      programmeId: 1n,
+      batchIndex: 0,
+      entryIndex: 0,
+      batch,
+      amount: 100n,
+    });
+
+    expect(verifyReceipt({ ...validReceipt, recipientRefHex: "short" })).toBe(false);
+    expect(verifyReceipt({ ...validReceipt, leafHex: "short" })).toBe(false);
+    expect(verifyReceipt({ ...validReceipt, rootHex: "short" })).toBe(false);
+    expect(verifyReceipt({ ...validReceipt, proofHex: "not-an-array" as any })).toBe(false);
   });
 });
