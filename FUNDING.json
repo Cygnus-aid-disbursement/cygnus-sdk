@@ -1,0 +1,7 @@
+{
+  "name": "cygnus-sdk",
+  "drips": {
+    "network": "ethereum",
+    "address": "FILL_IN_ADDRESS"
+  }
+}
