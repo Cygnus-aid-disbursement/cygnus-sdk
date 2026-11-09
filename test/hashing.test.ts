@@ -25,6 +25,19 @@ describe("canonicalJson", () => {
     expect(canonicalJson({ b: 1, a: undefined as unknown as any })).toBe('{"b":1}');
     expect(canonicalJson([1, undefined as unknown as any, 3])).toBe("[1,null,3]");
   });
+
+  it("handles primitives, empty containers, and deeply nested values", () => {
+    expect(canonicalJson(null)).toBe("null");
+    expect(canonicalJson(true)).toBe("true");
+    expect(canonicalJson(false)).toBe("false");
+    expect(canonicalJson(42)).toBe("42");
+    expect(canonicalJson("hello")).toBe('"hello"');
+    expect(canonicalJson({})).toBe("{}");
+    expect(canonicalJson([])).toBe("[]");
+    expect(canonicalJson({ deep: { nested: [{}, { k: "v" }] } })).toBe(
+      '{"deep":{"nested":[{},{"k":"v"}]}}',
+    );
+  });
 });
 
 describe("document hashes", () => {
