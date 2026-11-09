@@ -21,3 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Typed Errors**: Hierarchical error system (`CygnusError`, `CygnusContractError`, `ValidationError`) covering all 14 Soroban contract error codes and input validation.
 - **Runtime Validation**: Stringent validators for Stellar public keys (`G...`), contract IDs (`C...`), `i128` amounts, and 32-byte salts.
 - **Continuous Integration**: GitHub Actions workflow testing matrix across Node 20 and 22 with dependency security audit.
+- **Community & Governance**: Adopted Contributor Covenant v2.1 code of conduct, GitHub issue and PR templates, security disclosure policy, and Keep a Changelog standards.
+- **Funding & Sustainability**: Added Drips Network funding configuration profile (`FUNDING.json`).
+- **Contributor Roadmap**: Detailed remaining ~10% future milestones in `ISSUES.md`.
